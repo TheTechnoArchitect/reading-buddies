@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#7fd4ff" />
+<title>Reading Buddies — Digraphs &amp; Sight Words (offline single file)</title>
+<style>
+/* Reading Buddies — styles */
+
+:root{
+  --ink:#25324b;
+  --cream:#fffaf0;
+  --pink:#ff77c8;
+  --blue:#43b7ff;
+  --green:#38d39f;
+  --yellow:#ffc93c;
+  --orange:#ff9448;
+  --purple:#9b6bff;
+  --radius:26px;
+  --shadow:0 8px 0 rgba(37,50,75,.16), 0 14px 28px rgba(37,50,75,.14);
+  --shadow-sm:0 5px 0 rgba(37,50,75,.14);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+html,body{height:100%}
+
+body{
+  margin:0;
+  font-family:"Baloo 2","Fredoka","Comic Sans MS","Chalkboard SE","Trebuchet MS",system-ui,-apple-system,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 12% 8%, #ffe9a8 0%, transparent 42%),
+    radial-gradient(circle at 88% 12%, #ffd6f6 0%, transparent 40%),
+    radial-gradient(circle at 50% 100%, #c7f5ff 0%, transparent 55%),
+    linear-gradient(165deg,#a9e7ff 0%, #e6f4ff 45%, #fff3f9 100%);
+  background-attachment:fixed;
+  min-height:100%;
+  padding-bottom:104px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* floating background doodles */
+body::before{
+  content:"✦   ✿   ★   ✦   ✿   ★   ✦   ✿";
+  position:fixed; top:6px; left:0; right:0;
+  font-size:20px; color:#ffffff; opacity:.75;
+  text-align:center; letter-spacing:2.4em;
+  pointer-events:none; z-index:0;
+}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px calc(10px + env(safe-area-inset-top,0px));
+  background:linear-gradient(#ffffff 70%, rgba(255,255,255,.86));
+  border-bottom:4px solid #eaf4ff;
+  box-shadow:0 6px 18px rgba(37,50,75,.08);
+}
+.brand{display:flex; align-items:center; gap:8px; margin:0 auto; font-weight:800}
+.brand-emoji{font-size:28px; animation:bob 2.4s ease-in-out infinite}
+.brand-text{font-size:19px; letter-spacing:.3px}
+.topbar-right{display:flex; align-items:center; gap:8px}
+
+.icon-btn{
+  border:none; background:#eef6ff; color:var(--ink);
+  width:46px; height:46px; border-radius:16px; font-size:22px;
+  cursor:pointer; box-shadow:var(--shadow-sm); transition:transform .12s;
+}
+.icon-btn:active{transform:translateY(3px); box-shadow:none}
+
+.score-pill{
+  background:linear-gradient(#fff5c9,#ffe27a);
+  border:3px solid #ffd23f;
+  border-radius:999px; padding:6px 14px; font-size:19px; font-weight:800;
+  box-shadow:var(--shadow-sm); white-space:nowrap;
+}
+.score-pill.bump{animation:bump .45s ease}
+
+/* ---------- layout ---------- */
+.app{
+  position:relative; z-index:1;
+  max-width:920px; margin:0 auto; padding:18px 16px 10px;
+}
+
+.screen-title{
+  text-align:center; font-size:clamp(26px,6vw,40px); font-weight:800;
+  margin:6px 0 2px; line-height:1.1;
+  color:#fff;
+  text-shadow:0 3px 0 #64b8f0, 0 6px 0 rgba(37,50,75,.18);
+}
+.screen-sub{
+  text-align:center; font-size:17px; margin:0 0 16px;
+  color:#41506e; background:rgba(255,255,255,.78);
+  display:inline-block; padding:5px 16px; border-radius:999px;
+  position:relative; left:50%; transform:translateX(-50%);
+}
+
+/* ---------- home tiles ---------- */
+.tiles{
+  display:grid; gap:14px;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+}
+.tile{
+  border:none; cursor:pointer; text-align:center;
+  padding:20px 12px 18px; border-radius:var(--radius);
+  color:#fff; font-family:inherit; font-weight:800;
+  box-shadow:var(--shadow);
+  transition:transform .14s ease;
+  position:relative; overflow:hidden;
+}
+.tile:active{transform:translateY(5px) scale(.99); box-shadow:var(--shadow-sm)}
+.tile .t-emoji{display:block; font-size:46px; line-height:1.15}
+.tile .t-name{display:block; font-size:21px; margin-top:4px}
+.tile .t-desc{display:block; font-size:13.5px; font-weight:600; opacity:.95; margin-top:3px}
+.tile .t-badge{
+  position:absolute; top:10px; right:12px; font-size:13px; font-weight:700;
+  background:rgba(255,255,255,.28); border-radius:999px; padding:2px 9px;
+}
+.t-blue{background:linear-gradient(160deg,#63c9ff,#2f9de8)}
+.t-pink{background:linear-gradient(160deg,#ff8fd0,#f2509f)}
+.t-green{background:linear-gradient(160deg,#5ee0b3,#22b986)}
+.t-purple{background:linear-gradient(160deg,#b18cff,#7d44f5)}
+.t-orange{background:linear-gradient(160deg,#ffb45f,#f57c22)}
+.t-teal{background:linear-gradient(160deg,#5ad1e6,#1fa8c6)}
+.t-yellow{background:linear-gradient(160deg,#ffdd6b,#f5b400); color:#5a4000; text-shadow:none}
+
+/* ---------- card / question ---------- */
+.card{
+  background:var(--cream);
+  border:5px solid #fff;
+  border-radius:34px;
+  box-shadow:var(--shadow);
+  padding:20px 18px 22px;
+  margin-top:6px;
+}
+.card.pop{animation:pop .3s ease}
+
+.q-top{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.pill{
+  background:#eaf4ff; border-radius:999px; padding:5px 15px;
+  font-weight:800; font-size:16px;
+}
+.pill.streak{background:#ffe9f6}
+.progress{height:16px; background:#eaf4ff; border-radius:999px; overflow:hidden; margin:12px 0 4px}
+.progress > i{display:block; height:100%; width:0%; border-radius:999px;
+  background:linear-gradient(90deg,#5ee0b3,#43b7ff,#9b6bff); transition:width .35s ease}
+
+.big-word{
+  text-align:center; font-size:clamp(44px,13vw,84px); font-weight:800;
+  letter-spacing:1px; margin:14px 0 2px; line-height:1.05;
+}
+.emoji-hero{text-align:center; font-size:clamp(64px,20vw,120px); line-height:1; margin:8px 0 0}
+.blank{color:#ff5ba8; border-bottom:8px solid #ffb6da; padding:0 4px}
+
+.hint{text-align:center; font-size:16px; color:#5b6b88; margin:8px 0 0; font-weight:600}
+
+.prompt-row{display:flex; justify-content:center; gap:12px; margin:12px 0 4px; flex-wrap:wrap}
+
+.speak-btn{
+  border:none; cursor:pointer; font-family:inherit; font-weight:800;
+  font-size:19px; padding:14px 24px; border-radius:999px; color:#fff;
+  background:linear-gradient(160deg,#63c9ff,#2f9de8); box-shadow:var(--shadow-sm);
+  display:inline-flex; align-items:center; gap:9px;
+}
+.speak-btn:active{transform:translateY(4px); box-shadow:none}
+.speak-btn.ghost{background:linear-gradient(160deg,#ffd166,#f5a91c); color:#5a4000}
+.speak-btn.small{font-size:16px; padding:10px 18px}
+.speak-btn.playing .spk{animation:bob .5s ease-in-out infinite}
+
+/* ---------- options ---------- */
+.options{
+  display:grid; gap:14px; margin-top:16px;
+  grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+}
+.options.rows{grid-template-columns:1fr}
+.option{
+  border:4px solid #dce9f7; cursor:pointer; font-family:inherit;
+  background:#fff; border-radius:24px; padding:18px 10px;
+  font-size:clamp(30px,7vw,46px); font-weight:800; color:var(--ink);
+  box-shadow:var(--shadow-sm); transition:transform .12s, border-color .12s, background .12s;
+  min-height:86px;
+}
+.option:active{transform:translateY(4px); box-shadow:none}
+.option.correct{background:#dcfff0; border-color:var(--green); animation:bump .5s ease}
+.option.wrong{background:#ffe6ea; border-color:#ff8fa3; animation:shake .4s ease}
+.option.dim{opacity:.45}
+.option .opt-sub{display:block; font-size:15px; font-weight:700; color:#7186a4; margin-top:6px}
+
+.letter-tiles{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:16px}
+.letter{
+  border:4px solid #dce9f7; background:#fff; cursor:pointer; font-family:inherit;
+  width:76px; height:84px; border-radius:22px; font-size:40px; font-weight:800;
+  color:var(--ink); box-shadow:var(--shadow-sm); transition:transform .12s;
+}
+.letter:active{transform:translateY(4px); box-shadow:none}
+.letter.used{opacity:.25; pointer-events:none; transform:scale(.94)}
+
+.slots{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:8px 0 6px}
+.slot{
+  width:62px; height:74px; border-radius:18px; border:4px dashed #c4d8ee;
+  display:flex; align-items:center; justify-content:center;
+  font-size:38px; font-weight:800; background:#fff; color:var(--ink);
+}
+.slot.filled{border-style:solid; border-color:#9b6bff; background:#f4eeff; animation:bump .3s ease}
+.slot.next{border-color:var(--yellow); box-shadow:0 0 0 5px #fff3c9}
+
+/* ---------- sentence reader ---------- */
+.sentence{
+  display:flex; flex-wrap:wrap; gap:10px 12px; justify-content:center;
+  margin:16px 0 6px;
+}
+.sword{
+  font-family:inherit; border:none; cursor:pointer; font-weight:800;
+  font-size:clamp(22px,5.4vw,34px); padding:6px 12px; border-radius:16px;
+  background:#eef6ff; color:var(--ink); box-shadow:var(--shadow-sm);
+  transition:transform .12s, background .12s;
+}
+.sword:active{transform:translateY(3px); box-shadow:none}
+.sword.speaking{background:#ffe27a; transform:translateY(-4px) scale(1.06)}
+
+/* ---------- results / sticker book ---------- */
+.result{text-align:center}
+.result .big-emoji{font-size:100px; animation:bob 1.2s ease-in-out infinite}
+.result h2{font-size:clamp(28px,7vw,44px); margin:6px 0}
+.star-row{font-size:46px; letter-spacing:6px; margin:8px 0}
+.star-row span{opacity:.22}
+.star-row span.on{opacity:1; animation:pop .4s ease both}
+.btn-row{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:18px}
+
+.action{
+  border:none; cursor:pointer; font-family:inherit; font-weight:800; font-size:19px;
+  padding:15px 26px; border-radius:999px; color:#fff;
+  background:linear-gradient(160deg,#5ee0b3,#22b986); box-shadow:var(--shadow-sm);
+}
+.action.alt{background:linear-gradient(160deg,#ff8fd0,#f2509f)}
+.action.blue{background:linear-gradient(160deg,#63c9ff,#2f9de8)}
+.action:active{transform:translateY(4px); box-shadow:none}
+
+.sticker-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:14px; margin-top:16px}
+.sticker{
+  background:#fff; border:4px solid #eaf4ff; border-radius:24px; padding:14px 8px;
+  text-align:center; box-shadow:var(--shadow-sm);
+}
+.sticker .s-emoji{font-size:44px; display:block}
+.sticker .s-name{font-size:14px; font-weight:800; color:#41506e}
+.sticker.locked{opacity:.4; filter:grayscale(1)}
+.sticker.locked .s-emoji{filter:blur(1px)}
+
+/* ---------- level & settings ---------- */
+.level-pick{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin:14px 0 4px}
+.level-btn{
+  border:4px solid #fff; background:#eaf4ff; font-family:inherit; font-weight:800;
+  font-size:17px; padding:10px 20px; border-radius:999px; cursor:pointer;
+  color:var(--ink); box-shadow:var(--shadow-sm); transition:transform .12s;
+}
+.level-btn.active{background:linear-gradient(160deg,#ffd166,#f5a91c); border-color:#fff}
+.level-btn:active{transform:translateY(3px); box-shadow:none}
+
+.flashcard{
+  background:linear-gradient(160deg,#fffdf5,#fff2fb);
+  border:6px solid #fff; border-radius:34px; box-shadow:var(--shadow);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:280px; padding:20px; text-align:center; cursor:pointer;
+}
+.flashcard:active{transform:scale(.995)}
+.digraph-chip{
+  display:inline-block; font-size:clamp(56px,17vw,110px); font-weight:800;
+  color:#fff; padding:2px 26px; border-radius:28px; line-height:1.15;
+  text-shadow:0 4px 0 rgba(0,0,0,.14);
+}
+.c1{background:linear-gradient(160deg,#63c9ff,#2f9de8)}
+.c2{background:linear-gradient(160deg,#ff8fd0,#f2509f)}
+.c3{background:linear-gradient(160deg,#5ee0b3,#22b986)}
+.c4{background:linear-gradient(160deg,#b18cff,#7d44f5)}
+.c5{background:linear-gradient(160deg,#ffb45f,#f57c22)}
+.c6{background:linear-gradient(160deg,#5ad1e6,#1fa8c6)}
+.c7{background:linear-gradient(160deg,#ff8f8f,#e8443c)}
+.c8{background:linear-gradient(160deg,#ffe066,#e8b100); color:#5a4000}
+
+/* ---------- mascot ---------- */
+.mascot-bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:15;
+  display:flex; align-items:center; gap:10px;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(rgba(255,255,255,.6), #ffffff 60%);
+  border-top:4px solid #eaf4ff; pointer-events:none;
+}
+.mascot-face{font-size:46px; animation:bob 2.6s ease-in-out infinite}
+.speech-bubble{
+  background:#fff; border:4px solid #dce9f7; border-radius:22px;
+  padding:9px 16px; font-weight:700; font-size:16.5px; color:#33415e;
+  box-shadow:var(--shadow-sm); flex:1; min-height:46px; display:flex; align-items:center;
+}
+.speech-bubble.say{animation:pop .3s ease}
+
+/* ---------- confetti ---------- */
+.confetti-layer{position:fixed; inset:0; pointer-events:none; z-index:60; overflow:hidden}
+.confetti{position:absolute; top:-6vh; width:13px; height:19px; border-radius:4px; animation:fall linear forwards}
+.star-burst{
+  position:fixed; font-size:40px; z-index:61; pointer-events:none;
+  animation:burst .9s ease-out forwards;
+}
+
+/* ---------- animations ---------- */
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes bump{0%{transform:scale(1)}45%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(.85); opacity:0}100%{transform:scale(1); opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@keyframes fall{
+  0%{transform:translateY(0) rotate(0deg); opacity:1}
+  100%{transform:translateY(112vh) rotate(760deg); opacity:.9}
+}
+@keyframes burst{
+  0%{transform:translate(0,0) scale(.4); opacity:1}
+  100%{transform:translate(var(--dx,0), var(--dy,-120px)) scale(1.5); opacity:0}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important}
+}
+
+@media (max-width:420px){
+  .brand-text{display:none}
+  .card{padding:16px 12px 18px; border-radius:28px}
+  .option{font-size:30px; min-height:78px}
+}
+
+/* ---------- fallback notice when a browser cannot speak ---------- */
+.warn{
+  position:relative; z-index:30;
+  margin:10px 16px 0; padding:10px 16px; border-radius:18px;
+  background:#fff6d6; border:3px solid #ffd23f; color:#5a4000;
+  font-weight:700; font-size:15.5px; text-align:center;
+}
+
+/* ---------- touch polish: quick taps, no accidental text selection ---------- */
+button, .tile, .option, .sword, .letter, .slot, .flashcard{-webkit-user-select:none; user-select:none; touch-action:manipulation}
+.option, .sword, .letter, .speak-btn, .action, .level-btn{will-change:transform}
+
+</style>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦉</text></svg>">
+</head>
+<body>
+  <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <button class="icon-btn" id="homeBtn" title="Home" aria-label="Go home">🏠</button>
+    <div class="brand">
+      <span class="brand-emoji" id="mascotMini">🦉</span>
+      <span class="brand-text">Reading Buddies</span>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" id="soundBtn" title="Sound on/off" aria-label="Toggle sound">🔊</button>
+      <div class="score-pill" id="scorePill" title="Stars earned">⭐ <span id="starCount">0</span></div>
+    </div>
+  </header>
+
+  <main id="screen" class="app" aria-live="polite"></main>
+
+  <div class="mascot-bar" id="mascotBar">
+    <div class="mascot-face" id="mascotFace">🦉</div>
+    <div class="speech-bubble" id="speechBubble">Hi! I'm Ollie. Let's learn to read!</div>
+  </div>
+
+  
+  
+  
+<script>
+/* ===========================================================
+   Reading Buddies — word & activity data
+   Everything the games need lives here, so a parent or teacher
+   can add words without touching the game logic.
+   =========================================================== */
+
+/* Digraph sounds. A digraph is two letters that make ONE sound. */
+const DIGRAPHS = {
+  sh: { sound: "shh",   tip: "s + h say /sh/ — like a quiet train",  color: 1 },
+  ch: { sound: "chuh",  tip: "c + h say /ch/ — like a choo-choo",    color: 2 },
+  th: { sound: "th",    tip: "t + h say /th/ — tongue between teeth", color: 3 },
+  wh: { sound: "wuh",   tip: "w + h say /w/ — like a whistle blowing", color: 4 },
+  ph: { sound: "fff",   tip: "p + h say /f/ — a sneaky /f/ sound",   color: 5 },
+  ck: { sound: "k",     tip: "c + k say /k/ — at the END of a word",  color: 6 },
+  ng: { sound: "ng",    tip: "n + g hum at the back of your mouth",   color: 7 },
+  qu: { sound: "kwuh",  tip: "q + u always go together — /kw/",       color: 8 }
+};
+
+const DIGRAPH_WORDS = {
+  sh: [
+    { word: "ship",   emoji: "🚢" }, { word: "shoe",  emoji: "👟" },
+    { word: "fish",   emoji: "🐟" }, { word: "shell", emoji: "🐚" },
+    { word: "shark",  emoji: "🦈" }, { word: "shirt", emoji: "👕" },
+    { word: "sheep",  emoji: "🐑" }, { word: "brush", emoji: "🖌️" },
+    { word: "mushroom", emoji: "🍄" }
+  ],
+  ch: [
+    { word: "chair",  emoji: "🪑" }, { word: "cheese", emoji: "🧀" },
+    { word: "chick",  emoji: "🐤" }, { word: "cherry", emoji: "🍒" },
+    { word: "lunch",  emoji: "🍱" }, { word: "beach",  emoji: "🏖️" },
+    { word: "chocolate", emoji: "🍫" }, { word: "peach", emoji: "🍑" }
+  ],
+  th: [
+    { word: "thumb",  emoji: "👍" }, { word: "three",  emoji: "3️⃣" },
+    { word: "bath",   emoji: "🛁" }, { word: "tooth",  emoji: "🦷" },
+    { word: "feather", emoji: "🪶" }, { word: "think", emoji: "🤔" },
+    { word: "thunder", emoji: "⛈️" }, { word: "moth",  emoji: "🦋" }
+  ],
+  wh: [
+    { word: "whale",  emoji: "🐳" }, { word: "wheel",  emoji: "🛞" },
+    { word: "white",  emoji: "⚪" }, { word: "wheat",  emoji: "🌾" },
+    { word: "whistle", emoji: "📣" }, { word: "whisk", emoji: "🥄" },
+    { word: "whirlpool", emoji: "🌀" }
+  ],
+  ph: [
+    { word: "phone",  emoji: "📱" }, { word: "photo",  emoji: "📷" },
+    { word: "elephant", emoji: "🐘" }, { word: "dolphin", emoji: "🐬" },
+    { word: "trophy", emoji: "🏆" }, { word: "alphabet", emoji: "🔤" }
+  ],
+  ck: [
+    { word: "duck",   emoji: "🦆" }, { word: "sock",   emoji: "🧦" },
+    { word: "rock",   emoji: "🪨" }, { word: "clock",  emoji: "🕐" },
+    { word: "truck",  emoji: "🚚" }, { word: "snack",  emoji: "🍪" },
+    { word: "cracker", emoji: "🍘" }, { word: "locket", emoji: "📿" }
+  ],
+  ng: [
+    { word: "ring",   emoji: "💍" }, { word: "king",   emoji: "🤴" },
+    { word: "sing",   emoji: "🎤" }, { word: "wing",   emoji: "🪽" },
+    { word: "swing",  emoji: "🛝" }, { word: "song",   emoji: "🎵" },
+    { word: "strong", emoji: "💪" }, { word: "spring", emoji: "🌸" }
+  ],
+  qu: [
+    { word: "queen",  emoji: "👑" }, { word: "question", emoji: "❓" },
+    { word: "quilt",  emoji: "🛏️" }, { word: "quack",  emoji: "🦆" },
+    { word: "quick",  emoji: "⚡" }, { word: "quarter", emoji: "🪙" }
+  ]
+};
+
+/* Sight words — words we learn "by heart" (Dolch lists, levelled). */
+const SIGHT_WORDS = {
+  1: ["a","and","away","big","blue","can","come","down","find","for",
+      "funny","go","help","here","I","in","is","it","jump","little",
+      "look","make","me","my","not","one","play","red","run","said",
+      "see","the","three","to","two","up","we","where","yellow","you"],
+  2: ["all","am","are","at","ate","be","black","brown","but","came",
+      "did","do","eat","four","get","good","have","he","into","like",
+      "must","new","no","now","on","our","out","please","pretty","ran",
+      "ride","saw","say","she","so","soon","that","there","they","this",
+      "too","under","want","was","well","went","what","white","who","will",
+      "with","yes"],
+  3: ["after","again","an","any","as","ask","by","could","every","fly",
+      "from","give","going","had","has","her","him","his","how","just",
+      "know","let","live","may","of","old","once","open","over","put",
+      "round","some","stop","take","thank","them","then","think","walk",
+      "were","when","always","around","because","before","best","both",
+      "buy","call","cold","does","don't","fast","first","five","found",
+      "gave","goes","green","its","made","many","off","or","pull","read",
+      "right","sing","sit","sleep","tell","their","these","those","upon",
+      "us","use","very","wash","which","why","wish","work","would","write",
+      "your"]
+};
+
+/* Tap-and-read sentences: decodable words + sight words. */
+const SENTENCES = [
+  { emoji: "🐟", text: "The fish can swim." },
+  { emoji: "🚢", text: "A big ship went up." },
+  { emoji: "🧦", text: "She has a red sock." },
+  { emoji: "👑", text: "The king has a ring." },
+  { emoji: "🦆", text: "I like my little duck." },
+  { emoji: "🐳", text: "Can you see the whale?" },
+  { emoji: "🏖️", text: "They went to the beach." },
+  { emoji: "🐤", text: "Look at the three chicks!" },
+  { emoji: "🌙", text: "We can look up at the moon." },
+  { emoji: "🍄", text: "That is a big mushroom." },
+  { emoji: "🐘", text: "The elephant can run fast." },
+  { emoji: "🧀", text: "Please give me some cheese." },
+  { emoji: "👍", text: "Give me a thumbs up!" },
+  { emoji: "⛈️", text: "The thunder is very loud." },
+  { emoji: "🦈", text: "Do not go in with the shark!" }
+];
+
+/* Stickers handed out after a finished round. */
+const STICKERS = [
+  { emoji: "🦁", name: "Brave Lion" },   { emoji: "🐙", name: "Clever Octopus" },
+  { emoji: "🐝", name: "Busy Bee" },     { emoji: "🦄", name: "Magic Unicorn" },
+  { emoji: "🐼", name: "Panda Pal" },    { emoji: "🐸", name: "Jumping Frog" },
+  { emoji: "🦖", name: "Dino Reader" },  { emoji: "🐢", name: "Steady Turtle" },
+  { emoji: "🦋", name: "Bright Butterfly" }, { emoji: "🐬", name: "Happy Dolphin" },
+  { emoji: "🚀", name: "Rocket Reader" }, { emoji: "🌟", name: "Super Star" }
+];
+
+const PRAISE = ["Yes!", "Wow!", "Great job!", "You got it!", "Amazing!", "Super!", "Nice reading!"];
+const OOPS   = ["Try again!", "Almost! Listen again.", "Not quite — have another go.", "So close!"];
+
+/* ===========================================================
+   Reading Buddies — audio engine
+   • speak()  : text-to-speech (Web Speech API) for reading words aloud
+   • sfx()    : tiny synthesised sound effects (WebAudio) — no files needed
+   Everything fails soft: if a browser has no voice, the app still works.
+   =========================================================== */
+
+const Audio = (() => {
+  let ctx = null;
+  let soundOn = true;
+  let voice = null;
+  let voicesReady = false;
+
+  function pickVoice() {
+    if (!("speechSynthesis" in window)) return null;
+    const voices = window.speechSynthesis.getVoices() || [];
+    if (!voices.length) return null;
+    const prefer = [
+      /Samantha/i, /Google US English/i, /Microsoft (Aria|Jenny|Zira)/i,
+      /Karen/i, /Moira/i, /Tessa/i, /Google UK English Female/i
+    ];
+    for (const rx of prefer) {
+      const v = voices.find(v => rx.test(v.name) && /^en/i.test(v.lang));
+      if (v) return v;
+    }
+    return voices.find(v => /^en[-_]/i.test(v.lang)) || voices.find(v => /^en/i.test(v.lang)) || voices[0];
+  }
+
+  function initVoices() {
+    if (!("speechSynthesis" in window)) return;
+    voice = pickVoice();
+    voicesReady = !!voice;
+    // Voices often arrive asynchronously.
+    window.speechSynthesis.onvoiceschanged = () => { voice = pickVoice(); voicesReady = !!voice; };
+  }
+  initVoices();
+
+  function unlock() {
+    try {
+      if (!ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) ctx = new AC();
+      }
+      if (ctx && ctx.state === "suspended") ctx.resume();
+    } catch (e) { /* audio is a bonus, never a blocker */ }
+  }
+
+  /* ---------- speech ---------- */
+  function speak(text, opts = {}) {
+    if (!soundOn) return Promise.resolve();
+    if (!("speechSynthesis" in window) || !text) return Promise.resolve();
+    return new Promise(resolve => {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(String(text));
+        if (!voice) voice = pickVoice();
+        if (voice) u.voice = voice;
+        u.lang = (voice && voice.lang) || "en-US";
+        u.rate = opts.rate != null ? opts.rate : 0.82;
+        u.pitch = opts.pitch != null ? opts.pitch : 1.15;
+        u.volume = 1;
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        u.onend = finish;
+        u.onerror = finish;
+        window.speechSynthesis.speak(u);
+        // Safety net: some browsers drop onend.
+        setTimeout(finish, Math.max(1200, String(text).length * 180));
+      } catch (e) { resolve(); }
+    });
+  }
+
+  function stopSpeaking() {
+    try { if ("speechSynthesis" in window) window.speechSynthesis.cancel(); } catch (e) {}
+  }
+
+  /* ---------- sound effects ---------- */
+  function tone(freq, start, dur, type = "sine", gain = 0.16) {
+    if (!soundOn) return;
+    unlock();
+    if (!ctx) return;
+    const t0 = ctx.currentTime + start;
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g).connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.03);
+  }
+
+  function sfx(name) {
+    if (!soundOn) return;
+    switch (name) {
+      case "tap":    tone(660, 0, 0.08, "triangle", 0.10); break;
+      case "pop":    tone(880, 0, 0.09, "sine", 0.12); tone(1320, 0.05, 0.09, "sine", 0.09); break;
+      case "correct":tone(659, 0, 0.12); tone(880, 0.10, 0.14); tone(1175, 0.22, 0.20); break;
+      case "wrong":  tone(220, 0, 0.16, "sawtooth", 0.09); tone(165, 0.14, 0.22, "sawtooth", 0.08); break;
+      case "star":   [1046, 1318, 1568, 2093].forEach((f, i) => tone(f, i * 0.08, 0.18, "triangle", 0.11)); break;
+      case "cheer":  [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, i * 0.07, 0.22, "sine", 0.12)); break;
+      case "whoosh": tone(600, 0, 0.22, "sine", 0.07); break;
+    }
+  }
+
+  function setSound(on) {
+    soundOn = !!on;
+    if (!soundOn) stopSpeaking();
+    else unlock();
+  }
+  const isOn = () => soundOn;
+  const hasSpeech = () => "speechSynthesis" in window;
+
+  return { speak, stopSpeaking, sfx, setSound, isOn, hasSpeech, unlock, initVoices };
+})();
+
+/* ===========================================================
+   Reading Buddies — app logic
+   Games: Digraph Safari · Sight Word Hunt · Word Builder ·
+          Read With Me (sentences) · Flashcards · Sticker Book
+   =========================================================== */
+
+/* ---------------- tiny helpers ---------------- */
+const $  = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+const rnd  = n => Math.floor(Math.random() * n);
+const pick = arr => arr[rnd(arr.length)];
+const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+/* ---------------- persistent state ---------------- */
+const SAVE_KEY = "luna-reading-buddies-v1";
+const state = {
+  sound: true,
+  level: "easy",          // easy | medium | hard
+  stars: 0,
+  stickers: [],           // sticker names earned
+  knownWords: [],         // sight words the child marked as known
+  played: {}              // rounds completed per activity
+};
+
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) Object.assign(state, JSON.parse(raw));
+  } catch (e) {}
+}
+function save() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+function addStars(n) {
+  state.stars += n;
+  save();
+  const pill = $("#scorePill");
+  $("#starCount").textContent = state.stars;
+  pill.classList.remove("bump");
+  void pill.offsetWidth;
+  pill.classList.add("bump");
+}
+
+function awardSticker() {
+  const left = STICKERS.filter(s => !state.stickers.includes(s.name));
+  if (!left.length) return null;
+  const s = pick(left);
+  state.stickers.push(s.name);
+  save();
+  return s;
+}
+
+const levelNum = () => ({ easy: 1, medium: 2, hard: 3 }[state.level] || 1);
+const optionCount = () => ({ easy: 2, medium: 3, hard: 4 }[state.level] || 2);
+
+/* ---------------- mascot + juice ---------------- */
+let bubbleTimer = null;
+function say(text, ms = 3200) {
+  const bubble = $("#speechBubble");
+  bubble.textContent = text;
+  bubble.classList.remove("say");
+  void bubble.offsetWidth;
+  bubble.classList.add("say");
+  $("#mascotFace").textContent = pick(["🦉", "🦉", "🐤", "🦊"]);
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(() => {
+    $("#mascotFace").textContent = "🦉";
+    bubble.textContent = "You're doing great — keep going!";
+  }, ms);
+}
+
+function celebrate(count = 46) {
+  const layer = $("#confettiLayer");
+  const colors = ["#ff77c8", "#43b7ff", "#38d39f", "#ffc93c", "#ff9448", "#9b6bff"];
+  for (let i = 0; i < count; i++) {
+    const c = document.createElement("i");
+    c.className = "confetti";
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = pick(colors);
+    c.style.animationDuration = (1.1 + Math.random() * 1.4) + "s";
+    c.style.animationDelay = (Math.random() * 0.35) + "s";
+    c.style.transform = `rotate(${rnd(360)}deg)`;
+    if (Math.random() < 0.4) c.style.borderRadius = "50%";
+    layer.appendChild(c);
+    setTimeout(() => c.remove(), 3000);
+  }
+}
+
+function starBurst(x, y) {
+  const s = document.createElement("div");
+  s.className = "star-burst";
+  s.textContent = pick(["⭐", "🌟", "✨", "💫"]);
+  s.style.left = x + "px";
+  s.style.top = y + "px";
+  s.style.setProperty("--dx", (rnd(160) - 80) + "px");
+  s.style.setProperty("--dy", (-100 - rnd(80)) + "px");
+  document.body.appendChild(s);
+  setTimeout(() => s.remove(), 950);
+}
+
+/* ---------------- speech wrappers ---------------- */
+function speak(text, opts) { return Audio.speak(text, opts); }
+function speakWordSlow(w) { return speak(w, { rate: 0.66, pitch: 1.1 }); }
+function speakDigraphSound(key) {
+  const d = DIGRAPHS[key];
+  return speak(`${d.sound}`, { rate: 0.6, pitch: 1.0 });
+}
+
+/* ---------------- shared UI bits ---------------- */
+function screenTitle(title, sub) {
+  return `<h1 class="screen-title">${esc(title)}</h1>` +
+         (sub ? `<p class="screen-sub">${esc(sub)}</p>` : "");
+}
+
+function progressBar(done, total) {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return `<div class="progress" role="progressbar" aria-valuenow="${done}" aria-valuemax="${total}">
+            <i style="width:${pct}%"></i></div>`;
+}
+
+/* ---------------- router ---------------- */
+const SCREENS = {
+  home: renderHome,
+  safari: renderSafari,
+  hunt: renderHunt,
+  builder: renderBuilder,
+  sentences: renderSentences,
+  flashcards: renderFlashcards,
+  stickers: renderStickers
+};
+let current = "home";
+
+function go(name) {
+  current = SCREENS[name] ? name : "home";
+  Audio.stopSpeaking();
+  Audio.sfx("whoosh");
+  SCREENS[current]();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* =========================================================
+   HOME
+   ========================================================= */
+function renderHome() {
+  $("#screen").innerHTML = `
+    ${screenTitle("Reading Buddies", "Tap a game and let's read together!")}
+
+    <div class="card">
+      <div class="tiles">
+        <button class="tile t-blue"  data-go="safari">
+          <span class="t-emoji">🔤</span><span class="t-name">Digraph Safari</span>
+          <span class="t-desc">sh · ch · th · wh · ph · ck · ng · qu</span>
+        </button>
+        <button class="tile t-pink"  data-go="hunt">
+          <span class="t-emoji">⭐</span><span class="t-name">Sight Word Hunt</span>
+          <span class="t-desc">Listen, then tap the word you hear</span>
+        </button>
+        <button class="tile t-green" data-go="builder">
+          <span class="t-emoji">🧩</span><span class="t-name">Word Builder</span>
+          <span class="t-desc">Tap the letters to spell the word</span>
+        </button>
+        <button class="tile t-purple" data-go="sentences">
+          <span class="t-emoji">📖</span><span class="t-name">Read With Me</span>
+          <span class="t-desc">Tap each word in a little sentence</span>
+        </button>
+        <button class="tile t-teal"  data-go="flashcards">
+          <span class="t-emoji">🃏</span><span class="t-name">Flashcards</span>
+          <span class="t-desc">Look, listen and learn new sounds</span>
+        </button>
+        <button class="tile t-yellow" data-go="stickers">
+          <span class="t-emoji">🏅</span><span class="t-name">My Sticker Book</span>
+          <span class="t-desc">${state.stickers.length} of ${STICKERS.length} collected</span>
+        </button>
+      </div>
+
+      <h3 style="text-align:center;margin:22px 0 0">How hard should it be?</h3>
+      <div class="level-pick" id="levelPick">
+        ${["easy", "medium", "hard"].map(l =>
+          `<button class="level-btn ${state.level === l ? "active" : ""}" data-level="${l}">
+             ${l === "easy" ? "🐣 Easy" : l === "medium" ? "🐥 Medium" : "🦅 Hard"}
+           </button>`).join("")}
+      </div>
+      <p class="hint" id="levelHint">${levelHint()}</p>
+    </div>
+
+    <p class="hint" style="margin-top:14px">
+      Grown-ups: turn the sound on 🔊 and let your reader tap — every tap talks!
+    </p>`;
+
+  $$("[data-go]").forEach(b => b.addEventListener("click", () => go(b.dataset.go)));
+  $$("[data-level]").forEach(b => b.addEventListener("click", () => {
+    state.level = b.dataset.level; save(); Audio.sfx("pop"); renderHome();
+  }));
+  say("Hi! I'm Ollie the Owl. Which game shall we play?");
+}
+
+function levelHint() {
+  return {
+    easy:   "2 choices · short and simple words",
+    medium: "3 choices · a little trickier",
+    hard:   "4 choices · big-reader challenge"
+  }[state.level];
+}
+
+/* =========================================================
+   GAME 1 — DIGRAPH SAFARI
+   Listen to the word, then tap the two letters that are missing.
+   ========================================================= */
+const session = { total: 8, index: 0, correct: 0, firstTry: true, round: null };
+
+function allDigraphKeys() { return Object.keys(DIGRAPHS); }
+
+function newSafariRound() {
+  const keys = allDigraphKeys();
+  const key = pick(keys);
+  const entry = pick(DIGRAPH_WORDS[key]);
+  const { before, after } = splitWord(entry.word, key);
+  const n = optionCount();
+  const others = shuffle(keys.filter(k => k !== key)).slice(0, n - 1);
+  const options = shuffle([key, ...others]);
+  return { key, entry, before, after, options, answered: false };
+}
+
+function splitWord(word, key) {
+  const i = word.toLowerCase().indexOf(key);
+  if (i < 0) return { before: word, after: "" };
+  return { before: word.slice(0, i), after: word.slice(i + key.length) };
+}
+
+function renderSafari() {
+  session.index = 0; session.correct = 0; session.total = 8;
+  session.firstTry = true;
+  session.round = newSafariRound();
+  paintSafari();
+}
+
+function paintSafari(busy) {
+  const r = session.round;
+  const n = optionCount();
+  $("#screen").innerHTML = `
+    ${screenTitle("Digraph Safari", "Which two letters are hiding in the word?")}
+    <div class="card pop" id="gameCard">
+      <div class="q-top">
+        <span class="pill">Word ${session.index + 1} of ${session.total}</span>
+        <span class="pill streak">⭐ ${session.correct} right</span>
+      </div>
+      ${progressBar(session.index, session.total)}
+
+      <div class="emoji-hero" aria-hidden="true">${r.entry.emoji}</div>
+      <div class="big-word" aria-label="word with missing letters">
+        ${esc(r.before)}<span class="blank">__</span>${esc(r.after)}
+      </div>
+
+      <div class="prompt-row">
+        <button class="speak-btn" id="hearBtn"><span class="spk">🔊</span> Hear the word</button>
+        <button class="speak-btn ghost small" id="soundBtn2">👂 Just the sound</button>
+      </div>
+      <p class="hint">Listen… then tap the two letters that make that sound.</p>
+
+      <div class="options" id="opts">
+        ${r.options.map(k => `
+          <button class="option" data-key="${k}" style="color:#2c3b57">
+            ${esc(k)}<span class="opt-sub">${esc(DIGRAPHS[k].sound)}</span>
+          </button>`).join("")}
+      </div>
+    </div>`;
+
+  $("#hearBtn").addEventListener("click", () => { Audio.sfx("tap"); speakWordSlow(r.entry.word); });
+  $("#soundBtn2").addEventListener("click", () => { Audio.sfx("tap"); speakDigraphSound(r.key); });
+
+  $$("#opts .option").forEach(btn => btn.addEventListener("click", e => {
+    if (session.round.answered && btn.dataset.key !== session.round.key) return;
+    checkSafari(btn, e);
+  }));
+
+  if (!busy) {
+    say("Listen closely — which two letters are missing?");
+    setTimeout(() => speakWordSlow(r.entry.word), 260);
+  }
+}
+
+function checkSafari(btn, e) {
+  const r = session.round;
+  const chosen = btn.dataset.key;
+
+  if (chosen === r.key) {
+    r.answered = true;
+    btn.classList.add("correct");
+    Audio.sfx("correct");
+    if (session.firstTry) { session.correct++; addStars(1); }
+    const rect = btn.getBoundingClientRect();
+    starBurst(rect.left + rect.width / 2, rect.top);
+    celebrate(30);
+    say(`${pick(PRAISE)} "${r.entry.word}" has ${r.key} — ${DIGRAPHS[r.key].tip}.`);
+    speak(`Yes! ${r.entry.word}. ${r.key} says ${DIGRAPHS[r.key].sound}.`);
+    session.index++;
+    session.firstTry = true;
+    setTimeout(() => {
+      if (session.index >= session.total) return safariResults();
+      session.round = newSafariRound();
+      paintSafari(true);
+      setTimeout(() => speakWordSlow(session.round.entry.word), 300);
+    }, 1700);
+  } else {
+    session.firstTry = false;
+    btn.classList.add("wrong");
+    Audio.sfx("wrong");
+    say(`Oops! That's "${DIGRAPHS[chosen].sound}". Try the other one.`);
+    speak("Not quite. Try again.");
+    setTimeout(() => {
+      btn.classList.remove("wrong");
+      btn.classList.add("dim");
+      btn.disabled = true;
+    }, 500);
+  }
+}
+
+function safariResults() {
+  Audio.sfx("cheer");
+  celebrate(90);
+  const st = awardSticker();
+  state.played.safari = (state.played.safari || 0) + 1; save();
+  $("#screen").innerHTML = resultsHTML(
+    "Digraph Detective!",
+    session.correct,
+    session.total,
+    st,
+    "You listened for the sounds inside words — that's real reading!"
+  );
+  wireResults(() => renderSafari());
+  say("Amazing work! You are a digraph detective!");
+}
+
+/* =========================================================
+   GAME 2 — SIGHT WORD HUNT
+   Hear the word, tap the written word.
+   ========================================================= */
+function wordPool() {
+  return SIGHT_WORDS[levelNum()] || SIGHT_WORDS[1];
+}
+
+function similarDistractors(target, pool, n) {
+  const ranked = pool.filter(w => w !== target).map(w => {
+    let score = 0;
+    if (w[0] === target[0]) score += 3;
+    if (w.length === target.length) score += 2;
+    if (w.slice(-1) === target.slice(-1)) score += 1;
+    if (Math.abs(w.length - target.length) <= 1) score += 1;
+    return { w, score };
+  }).sort((a, b) => b.score - a.score);
+  const top = ranked.slice(0, Math.max(8, n * 3)).map(r => r.w);
+  return shuffle(top.length >= n ? top : ranked.map(r => r.w)).slice(0, n);
+}
+
+function newHuntRound() {
+  const pool = wordPool();
+  const target = pick(pool);
+  const n = optionCount();
+  const options = shuffle([target, ...similarDistractors(target, pool, n - 1)]);
+  return { target, options, answered: false, tries: 0 };
+}
+
+function renderHunt() {
+  session.index = 0; session.correct = 0; session.total = 8;
+  session.round = newHuntRound();
+  session.firstTry = true;
+  paintHunt();
+}
+
+function paintHunt(busy) {
+  const r = session.round;
+  $("#screen").innerHTML = `
+    ${screenTitle("Sight Word Hunt", "Listen… then tap the word you hear!")}
+    <div class="card pop">
+      <div class="q-top">
+        <span class="pill">Word ${session.index + 1} of ${session.total}</span>
+        <span class="pill streak">⭐ ${session.correct} right</span>
+      </div>
+      ${progressBar(session.index, session.total)}
+
+      <div class="emoji-hero">${r.answered ? "🎉" : "❓"}</div>
+      <div class="prompt-row">
+        <button class="speak-btn" id="hearBtn"><span class="spk">🔊</span> Say it again</button>
+      </div>
+      <p class="hint">Tip: look at the first letter, then the whole word.</p>
+
+      <div class="options" id="opts">
+        ${r.options.map(w => `<button class="option" data-word="${esc(w)}">${esc(w)}</button>`).join("")}
+      </div>
+    </div>`;
+
+  $("#hearBtn").addEventListener("click", () => { Audio.sfx("tap"); speakWordSlow(r.target); });
+  $$("#opts .option").forEach(btn => btn.addEventListener("click", e => checkHunt(btn, e)));
+  if (!busy) setTimeout(() => speakWordSlow(r.target), 250);
+}
+
+function checkHunt(btn, e) {
+  const r = session.round;
+  if (r.answered) return;
+  const word = btn.dataset.word;
+
+  if (word === r.target) {
+    r.answered = true;
+    btn.classList.add("correct");
+    Audio.sfx("correct");
+    addStars(1);
+    session.correct++;
+    const rect = btn.getBoundingClientRect();
+    starBurst(rect.left + rect.width / 2, rect.top);
+    celebrate(30);
+    const sentence = sentenceFor(r.target);
+    say(`${pick(PRAISE)} "${r.target}" — ${sentence}`);
+    speak(`${r.target}. ${cap(r.target)}. ${sentence}`, { rate: 0.78 });
+    session.index++;
+    setTimeout(() => {
+      if (session.index >= session.total) return huntResults();
+      session.round = newHuntRound();
+      paintHunt(true);
+      setTimeout(() => speakWordSlow(session.round.target), 350);
+    }, 2100);
+  } else {
+    r.tries++;
+    btn.classList.add("wrong");
+    Audio.sfx("wrong");
+    say(`That says "${word}". Listen again — you can do it!`);
+    speak("That is not it. Listen again.");
+    setTimeout(() => { btn.classList.remove("wrong"); btn.classList.add("dim"); btn.disabled = true; }, 500);
+  }
+}
+
+function sentenceFor(w) {
+  const bank = {
+    the: "Look at the ship.", a: "A big duck.", and: "You and me.", see: "I see a fish.",
+    can: "Can you jump?", go: "Let's go to the beach!", I: "I like my cat.",
+    like: "I like cheese.", my: "My little sock.", you: "You can do it!",
+    we: "We can play.", is: "The king is here.", it: "It is a rock.",
+    she: "She has a ring.", he: "He can sing.", they: "They went up.",
+    this: "This is my lunch.", that: "That is a whale.", look: "Look at the moon.",
+    little: "My little chick.", come: "Come and see.", here: "Here is my thumb.",
+    said: "She said hello.", want: "I want a snack.", have: "I have a tooth."
+  };
+  return bank[w] || `I can read "${w}".`;
+}
+
+function huntResults() {
+  Audio.sfx("cheer"); celebrate(90);
+  const st = awardSticker();
+  state.played.hunt = (state.played.hunt || 0) + 1; save();
+  $("#screen").innerHTML = resultsHTML(
+    "Sight Word Star!",
+    session.correct, session.total, st,
+    "Sight words are tricky — they don't follow the rules. You remembered them!"
+  );
+  wireResults(() => renderHunt());
+  say("Super reading! Those words are yours now.");
+}
+
+/* =========================================================
+   GAME 3 — WORD BUILDER
+   ========================================================= */
+function newBuildRound() {
+  const pool = wordPool().filter(w => w.length <= (state.level === "easy" ? 3 : state.level === "medium" ? 4 : 6));
+  const words = pool.length >= 5 ? pool : wordPool();
+  const target = pick(words);
+  const extra = state.level === "hard" ? 2 : 0;
+  const alphabet = "abcdefghijklmnopqrstuvwxyz".split("").filter(c => !target.includes(c));
+  const letters = shuffle([...target.split(""), ...shuffle(alphabet).slice(0, extra)]);
+  return { target, letters, placed: [], answered: false };
+}
+
+function renderBuilder() {
+  session.index = 0; session.correct = 0; session.total = 6;
+  session.round = newBuildRound();
+  paintBuilder();
+}
+
+function paintBuilder(busy, solved) {
+  const r = session.round;
+  // Which tiles are already used? (count-based, so repeated letters work)
+  function tileHTML() {
+    const need = {};
+    r.placed.forEach(c => { need[c] = (need[c] || 0) + 1; });
+    const seen = {};
+    return r.letters.map(c => {
+      seen[c] = (seen[c] || 0) + 1;
+      const used = seen[c] <= (need[c] || 0);
+      return `<button class="letter ${used ? "used" : ""}" data-char="${c}">${esc(c)}</button>`;
+    }).join("");
+  }
+
+  $("#screen").innerHTML = `
+    ${screenTitle("Word Builder", "Tap the letters in order to spell the word")}
+    <div class="card pop">
+      <div class="q-top">
+        <span class="pill">Word ${session.index + 1} of ${session.total}</span>
+        <span class="pill streak">⭐ ${session.correct} built</span>
+      </div>
+      ${progressBar(session.index, session.total)}
+
+      <div class="prompt-row">
+        <button class="speak-btn" id="hearBtn"><span class="spk">🔊</span> Hear the word</button>
+        <button class="speak-btn ghost small" id="undoBtn">↩︎ Undo</button>
+      </div>
+
+      <div class="slots" id="slots">
+        ${r.target.split("").map((_, i) =>
+          `<div class="slot ${i < r.placed.length ? "filled" : ""} ${!solved && i === r.placed.length ? "next" : ""}">${r.placed[i] ? esc(r.placed[i]) : ""}</div>`
+        ).join("")}
+      </div>
+
+      <div class="letter-tiles" id="tiles">
+        ${tileHTML()}
+      </div>
+      <p class="hint">${solved
+        ? `🎉 You built <b>${esc(r.target)}</b>! Say it with me!`
+        : 'Say the sounds as you tap: c · a · t → "cat"'}</p>
+    </div>`;
+
+  $("#hearBtn").addEventListener("click", () => { Audio.sfx("tap"); speakWordSlow(r.target); });
+  $("#undoBtn").addEventListener("click", () => {
+    if (!r.placed.length) return;
+    r.placed.pop(); Audio.sfx("tap"); paintBuilder(true);
+  });
+
+  $$("#tiles .letter").forEach(btn => btn.addEventListener("click", () => {
+    if (r.answered) return;
+    const c = btn.dataset.char;
+    const nextLetter = r.target[r.placed.length];
+    if (c === nextLetter) {
+      r.placed.push(c);
+      Audio.sfx("pop");
+      speak(String(c), { rate: 0.8, pitch: 1.25 });
+      if (r.placed.length === r.target.length) {
+        r.answered = true;
+        Audio.sfx("correct");
+        addStars(1);
+        session.correct++;
+        const rect = btn.getBoundingClientRect();
+        starBurst(rect.left + rect.width / 2, rect.top);
+        celebrate(36);
+        paintBuilder(true, true);          // show the finished word
+        say(`You spelled "${r.target}"! Let's read it together.`);
+        setTimeout(() => speak(`${r.target}. ${cap(r.target)}!`, { rate: 0.7 }), 550);
+        session.index++;
+        setTimeout(() => {
+          if (session.index >= session.total) return builderResults();
+          session.round = newBuildRound();
+          paintBuilder(true);
+          setTimeout(() => speakWordSlow(session.round.target), 350);
+        }, 2300);
+      } else {
+        paintBuilder(true);
+        speakWordSlow(r.target.slice(0, r.placed.length));
+      }
+    } else {
+      Audio.sfx("wrong");
+      btn.classList.add("wrong");
+      say(`"${c}" comes later. We need "${nextLetter}" next.`);
+      setTimeout(() => btn.classList.remove("wrong"), 500);
+    }
+  }));
+
+  if (!busy) setTimeout(() => speakWordSlow(r.target), 250);
+}
+
+function builderResults() {
+  Audio.sfx("cheer"); celebrate(90);
+  const st = awardSticker();
+  state.played.builder = (state.played.builder || 0) + 1; save();
+  $("#screen").innerHTML = resultsHTML(
+    "Word Builder!",
+    session.correct, session.total, st,
+    "You stretched the word out and built it. That's how writers spell!"
+  );
+  wireResults(() => renderBuilder());
+  say("Fantastic spelling! You built every word.");
+}
+
+/* =========================================================
+   GAME 4 — READ WITH ME (sentences)
+   ========================================================= */
+let sentenceIdx = 0;
+function renderSentences() {
+  const s = SENTENCES[sentenceIdx % SENTENCES.length];
+  const words = s.text.split(" ");
+  $("#screen").innerHTML = `
+    ${screenTitle("Read With Me", "Tap any word to hear it")}
+    <div class="card pop">
+      <div class="q-top">
+        <span class="pill">Sentence ${(sentenceIdx % SENTENCES.length) + 1} of ${SENTENCES.length}</span>
+        <span class="pill streak">👆 tap the words</span>
+      </div>
+      <div class="emoji-hero">${s.emoji}</div>
+      <div class="sentence" id="sentence">
+        ${words.map((w, i) => `<button class="sword" data-i="${i}" data-w="${esc(w)}">${esc(w)}</button>`).join("")}
+      </div>
+      <div class="prompt-row">
+        <button class="speak-btn" id="readAll"><span class="spk">▶︎</span> Read it to me</button>
+        <button class="speak-btn ghost small" id="readSlow">🐢 Slowly</button>
+      </div>
+      <div class="btn-row">
+        <button class="action blue" id="nextSent">Next sentence ➜</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <p class="hint" style="margin:0">
+        Reading tip: point to each word while you say it. Words with <b>sh, ch, th, ck</b>
+        get their own special sound!
+      </p>
+    </div>`;
+
+  $$("#sentence .sword").forEach(b => b.addEventListener("click", ev => {
+    Audio.sfx("tap");
+    highlightWord(b);
+    speak(b.dataset.w.replace(/[.!?,"]/g, ""), { rate: 0.7 });
+  }));
+
+  $("#readAll").addEventListener("click", () => readAll(words, 0.82));
+  $("#readSlow").addEventListener("click", () => readAll(words, 0.6));
+  $("#nextSent").addEventListener("click", () => {
+    sentenceIdx++;
+    Audio.sfx("pop");
+    if (sentenceIdx % 5 === 0) { addStars(1); celebrate(24); say("You read 5 sentences! Here's a star ⭐"); }
+    renderSentences();
+  });
+
+  say("Point to each word and read it out loud with me!");
+}
+
+let readingAll = false;
+async function readAll(words, rate) {
+  if (readingAll) return;
+  readingAll = true;
+  const btns = $$("#sentence .sword");
+  btns.forEach(b => b.classList.remove("speaking"));
+  for (let i = 0; i < words.length; i++) {
+    btns.forEach(b => b.classList.remove("speaking"));
+    if (btns[i]) btns[i].classList.add("speaking");
+    await speak(words[i].replace(/[.!?,"]/g, ""), { rate, pitch: 1.15 });
+    await new Promise(r => setTimeout(r, 110));
+  }
+  btns.forEach(b => b.classList.remove("speaking"));
+  readingAll = false;
+}
+
+function highlightWord(btn) {
+  $$("#sentence .sword").forEach(b => b.classList.remove("speaking"));
+  btn.classList.add("speaking");
+}
+
+/* =========================================================
+   FLASHCARDS (explore mode)
+   ========================================================= */
+let fcMode = "digraph";
+let fcKeyIndex = 0;
+let fcWordIndex = 0;
+let fcSightIndex = 0;
+
+function renderFlashcards() {
+  if (fcMode === "digraph") return renderDigraphCards();
+  return renderSightCards();
+}
+
+function renderDigraphCards() {
+  const keys = allDigraphKeys();
+  const key = keys[fcKeyIndex % keys.length];
+  const d = DIGRAPHS[key];
+  const words = DIGRAPH_WORDS[key];
+  const w = words[fcWordIndex % words.length];
+  const { before, after } = splitWord(w.word, key);
+
+  $("#screen").innerHTML = `
+    ${screenTitle("Sound Flashcards", "Tap the letters to hear the sound")}
+    <div class="level-pick">
+      <button class="level-btn active" data-mode="digraph">🔤 Digraphs</button>
+      <button class="level-btn" data-mode="sight">⭐ Sight words</button>
+    </div>
+
+    <div class="flashcard pop" id="fc">
+      <div class="digraph-chip c${d.color}" id="chip">${esc(key)}</div>
+      <p class="hint" style="font-size:18px;margin-top:14px">${esc(d.tip)}</p>
+      <p class="hint">The sound is <b>${esc(d.sound)}</b></p>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="q-top">
+        <span class="pill">${esc(key)} words · ${(fcWordIndex % words.length) + 1} of ${words.length}</span>
+        <span class="pill streak">Tap a word 👇</span>
+      </div>
+      <div class="emoji-hero" style="font-size:76px">${w.emoji}</div>
+      <div class="big-word" style="font-size:clamp(38px,11vw,66px)">
+        ${esc(before)}<span style="color:#ff5ba8">${esc(key)}</span>${esc(after)}
+      </div>
+      <div class="btn-row">
+        <button class="action blue" id="hearWordBtn">🔊 Hear the word</button>
+        <button class="action alt" id="nextWordBtn">Next word ➜</button>
+      </div>
+      <div class="options" style="margin-top:18px">
+        ${allDigraphKeys().map(k => `
+          <button class="option ${k === key ? "correct" : ""}" data-key="${k}" style="font-size:26px">
+            ${esc(k)}<span class="opt-sub">${esc(DIGRAPHS[k].sound)}</span>
+          </button>`).join("")}
+      </div>
+      <p class="hint">Tap any sound to switch to it.</p>
+    </div>`;
+
+  const hear = () => { Audio.sfx("tap"); speakDigraphSound(key).then(() => speak(`${w.word}`, { rate: 0.7 })); };
+  $("#fc").addEventListener("click", hear);
+  $("#chip").addEventListener("click", ev => { ev.stopPropagation(); hear(); });
+  $("#hearWordBtn").addEventListener("click", hear);
+  $("#nextWordBtn").addEventListener("click", () => { fcWordIndex++; Audio.sfx("pop"); renderDigraphCards(); });
+  $$("[data-mode]").forEach(b => b.addEventListener("click", () => { fcMode = b.dataset.mode; Audio.sfx("pop"); renderFlashcards(); }));
+  $$("[data-key]").forEach(b => b.addEventListener("click", () => {
+    fcKeyIndex = allDigraphKeys().indexOf(b.dataset.key);
+    fcWordIndex = 0;
+    Audio.sfx("pop");
+    renderDigraphCards();
+  }));
+
+  say(`${key} says ${d.sound}. Can you say it? ${key}… ${w.word}!`);
+  setTimeout(() => speak(`${key}. ${key} says ${d.sound}. ${w.word}`, { rate: 0.7 }), 400);
+}
+
+function renderSightCards() {
+  const pool = wordPool();
+  const word = pool[fcSightIndex % pool.length];
+  const known = state.knownWords.includes(word);
+
+  $("#screen").innerHTML = `
+    ${screenTitle("Word Flashcards", "Tap the card to hear the word")}
+    <div class="level-pick">
+      <button class="level-btn" data-mode="digraph">🔤 Digraphs</button>
+      <button class="level-btn active" data-mode="sight">⭐ Sight words</button>
+    </div>
+
+    <div class="flashcard pop" id="fc">
+      <div class="big-word" style="font-size:clamp(52px,16vw,104px)">${esc(word)}</div>
+      <p class="hint" id="tapHint">👆 tap to hear it</p>
+      ${known ? `<p class="pill" style="margin-top:12px">✅ you know this one</p>` : ""}
+    </div>
+
+    <div class="btn-row">
+      <button class="action blue" id="againBtn">🔊 Say it again</button>
+      <button class="action" id="knowBtn">✅ I know it!</button>
+      <button class="action alt" id="nextCard">Next ➜</button>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="q-top">
+        <span class="pill">Word ${(fcSightIndex % pool.length) + 1} of ${pool.length}</span>
+        <span class="pill streak">✅ known: ${state.knownWords.length}</span>
+      </div>
+      <p class="hint" style="margin:6px 0 0">Sight words are words we learn to know
+      <b>in a flash</b> — no sounding out needed!</p>
+    </div>`;
+
+  const hear = () => { Audio.sfx("tap"); speakWordSlow(word); };
+  $("#fc").addEventListener("click", hear);
+  $("#againBtn").addEventListener("click", hear);
+  $("#nextCard").addEventListener("click", () => { fcSightIndex++; Audio.sfx("pop"); renderSightCards(); });
+  $("#knowBtn").addEventListener("click", () => {
+    Audio.sfx("star");
+    celebrate(30);
+    if (!state.knownWords.includes(word)) state.knownWords.push(word);
+    save();
+    addStars(1);
+    say(`Wonderful! You know "${word}". ⭐`);
+    speak(`Great! You know ${word}.`, { rate: 0.78 });
+    setTimeout(() => { fcSightIndex++; renderSightCards(); }, 1400);
+  });
+  $$("[data-mode]").forEach(b => b.addEventListener("click", () => { fcMode = b.dataset.mode; Audio.sfx("pop"); renderFlashcards(); }));
+
+  say(`Can you read this word? ${word}.`);
+  setTimeout(() => speakWordSlow(word), 400);
+}
+
+/* =========================================================
+   STICKER BOOK + PROGRESS
+   ========================================================= */
+function renderStickers() {
+  $("#screen").innerHTML = `
+    ${screenTitle("My Sticker Book", "Finish a round to win a sticker!")}
+    <div class="card">
+      <div class="q-top">
+        <span class="pill">⭐ Stars: ${state.stars}</span>
+        <span class="pill streak">🏅 Stickers: ${state.stickers.length}/${STICKERS.length}</span>
+        <span class="pill">✅ Words I know: ${state.knownWords.length}</span>
+      </div>
+      <div class="sticker-grid">
+        ${STICKERS.map(s => {
+          const got = state.stickers.includes(s.name);
+          return `<div class="sticker ${got ? "" : "locked"}">
+                    <span class="s-emoji">${got ? s.emoji : "❔"}</span>
+                    <span class="s-name">${got ? esc(s.name) : "Locked"}</span>
+                  </div>`;
+        }).join("")}
+      </div>
+    </div>
+
+    ${state.knownWords.length ? `
+    <div class="card" style="margin-top:16px">
+      <h3 style="margin:0 0 8px">Words you know by heart ❤️</h3>
+      <div class="sentence">
+        ${state.knownWords.slice(-40).map(w => `<button class="sword" data-say="${esc(w)}">${esc(w)}</button>`).join("")}
+      </div>
+      <p class="hint">Tap any word to hear it again.</p>
+    </div>` : ""}
+
+    <div class="btn-row">
+      <button class="action blue" id="backHome">🏠 More games</button>
+      <button class="action alt" id="resetBtn">↺ Start over</button>
+    </div>`;
+
+  $$("[data-say]").forEach(b => b.addEventListener("click", () => { Audio.sfx("tap"); speakWordSlow(b.dataset.say); }));
+  $("#backHome").addEventListener("click", () => go("home"));
+  $("#resetBtn").addEventListener("click", () => {
+    state.stars = 0; state.stickers = []; state.knownWords = []; state.played = {};
+    save();
+    $("#starCount").textContent = "0";
+    Audio.sfx("pop");
+    celebrate(40);
+    say("All fresh and new! Let's read again.");
+    renderStickers();
+  });
+
+  say("Look at all your stickers — you are a superstar reader!");
+}
+
+/* =========================================================
+   RESULTS SCREEN
+   ========================================================= */
+function resultsHTML(title, correct, total, sticker, blurb) {
+  const filled = Math.round((correct / total) * 3);
+  return `
+    <div class="card pop result">
+      <div class="big-emoji">${filled === 3 ? "🏆" : filled === 2 ? "🎉" : "💪"}</div>
+      <h2>${esc(title)}</h2>
+      <div class="star-row">
+        ${[1, 2, 3].map(i => `<span class="${i <= Math.max(1, filled) ? "on" : ""}">⭐</span>`).join("")}
+      </div>
+      <p class="hint" style="font-size:19px">You got <b>${correct}</b> out of <b>${total}</b>!</p>
+      <p class="hint">${esc(blurb)}</p>
+      ${sticker ? `<div class="sticker" style="max-width:180px;margin:16px auto 0">
+        <span class="s-emoji">${sticker.emoji}</span>
+        <span class="s-name">New sticker: ${esc(sticker.name)}!</span>
+      </div>` : `<p class="hint">You collected every sticker — wow! 🏅</p>`}
+      <div class="btn-row">
+        <button class="action" id="againBtn2">🔁 Play again</button>
+        <button class="action blue" id="homeBtn2">🏠 More games</button>
+      </div>
+    </div>`;
+}
+
+function wireResults(againFn) {
+  $("#againBtn2").addEventListener("click", () => { Audio.sfx("pop"); againFn(); });
+  $("#homeBtn2").addEventListener("click", () => go("home"));
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+function boot() {
+  load();
+  $("#starCount").textContent = state.stars;
+  $("#soundBtn").textContent = state.sound ? "🔊" : "🔇";
+
+  $("#homeBtn").addEventListener("click", () => go("home"));
+  $("#soundBtn").addEventListener("click", () => {
+    state.sound = !state.sound;
+    Audio.setSound(state.sound);
+    save();
+    $("#soundBtn").textContent = state.sound ? "🔊" : "🔇";
+    if (state.sound) { Audio.sfx("pop"); say("Sound is on!"); }
+    else say("Sound is off. Tap 🔊 to turn it back on.", 5000);
+  });
+
+  // if this browser can't talk, tell the grown-up (games still work silently)
+  if (!Audio.hasSpeech()) {
+    const w = document.createElement("div");
+    w.className = "warn";
+    w.textContent = "🔈 This browser can't read words out loud. The games still work — try Chrome, Edge or Safari to hear the words.";
+    document.body.insertBefore(w, document.getElementById("screen"));
+  }
+
+  // unlock audio on the very first interaction (browser policy)
+  const unlock = () => { Audio.unlock(); document.removeEventListener("pointerdown", unlock); };
+  document.addEventListener("pointerdown", unlock);
+
+  // keyboard: Esc = home, Space = repeat the current prompt
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") go("home");
+  });
+
+  go("home");
+}
+
+document.addEventListener("DOMContentLoaded", boot);
+
+</script>
+</body>
+</html>
